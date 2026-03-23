@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Imatra Rescue - Classic Markers</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+    <style>
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #222; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; }
+        .info-panel {
+            position: absolute; top: 15px; left: 15px; z-index: 10;
+            background-color: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.3); width: 310px;
+            max-height: 90vh; display: flex; flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .search-group { margin-bottom: 10px; }
+        .search-label { font-size: 0.75em; font-weight: bold; color: #666; margin-bottom: 4px; display: block; }
+        .station-card { border-left: 4px solid #e11d48; padding-left: 12px; margin-top: 15px; }
+        #instructions { margin-top: 15px; overflow-y: auto; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 10px; }
+        .step { margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+        #current-loc-btn {
+            background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;
+            padding: 8px; cursor: pointer; font-size: 0.75em; margin-bottom: 15px;
+            width: 100%; font-weight: bold;
+        }
+        #current-loc-btn:hover { background-color: #e0e0e0; }
+
+        /* UUSI ISOMPI PUNAINEN PALLO */
+        .dot-marker {
+            width: 20px;
+            height: 20px;
+            background-color: #e11d48;
+            border: 3px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+        .dot-marker:hover {
+            transform: scale(1.4);
+            background-color: #ff0033;
+        }
+    </style>
+</head>
+<body>
+
+<div class="info-panel">
+    <div style="font-weight: bold; font-size: 1.2em; color: #e11d48; margin-bottom: 15px;">Rescue Services Imatra</div>
+    <button id="current-loc-btn">📍 Use Current Location</button>
+    <div class="search-group">
+        <span class="search-label">START POINT</span>
+        <div id="start-geocoder"></div>
+    </div>
+    <div class="search-group">
+        <span class="search-label">DESTINATION</span>
+        <div id="dest-geocoder"></div>
+    </div>
+    <div id="output-panel" style="display:none;">
+        <div class="station-card">
+            <div id="dest-name" style="font-weight:bold;"></div>
+            <div id="dest-info" style="font-size:0.8em;"></div>
+        </div>
+        <div style="margin-top:10px; font-size:0.9em;">
+            Distance: <span id="route-dist" style="color:#2563eb; font-weight:bold;">-</span><br>
+            Time: <span id="route-time" style="font-weight:bold;">-</span>
+        </div>
+        <div id="instructions"></div>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+    const myToken = 'pk.eyJ1IjoicHVzZW5pdXNtIiwiYSI6ImNtbGF4dnJkdTBmaGkzZ3I0MnF4cHdramMifQ.Qu_chBm1vHHidv0tZZ77mA';
+    mapboxgl.accessToken = myToken;
+
+    const stations = [
+        { name: "Imatran paloasema", coords: [28.802606, 61.212504], info: "Units: EK202, EK206" },
+        { name: "Tainionkosken VPK", coords: [28.745036, 61.187443], info: "Units: EK222, EK227" },
+        { name: "Joutsenon paloasema", coords: [28.489787, 61.119090], info: "Units: EK411, EK413, EK417" },
+        { name: "Imatran VPK", coords: [28.793877, 61.170751], info: "Units: EK211, EK213, EK217" },
+        { name: "Ruokolahden VPK", coords: [28.850206, 61.280868], info: "Units: EK311, EK315" },
+        { name: "Lappeenrannan paloasema", coords: [28.237523, 61.060792], info: "Units: EK101, EK103, EK106" },
+        { name: "Simpeleen VPK", coords: [29.360733, 61.434642], info: "Units: EK251, EK253, EK257" },
+        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: "Units: EK352, EK353" },
+        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: "Units: EK302, EK306" },
+        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: "Units: EK131, EK133" },
+        { name: "Rutolan VPK", coords: [28.043561, 61.041917], info: "Units: EK191, EK193" },
+        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: "Units: EK161, EK163" },
+        { name: "Lemin VPK", coords: [27.807265, 61.059921], info: "Units: EK342, EK343" },
+        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: "Units: EK261, EK263" },
+        { name: "Savitaipaleen VPK", coords: [27.683248, 61.198784], info: "Units: EK311, EK313" },
+        { name: "Luumäen VPK", coords: [27.554962, 60.921391], info: "Units: EK321, EK323" },
+        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: "Units: EK121, EK123, EK127" }
+    ];
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [28.85, 61.23],
+        zoom: 10
+    });
+
+    let startLoc = [28.85, 61.23];
+    let endLoc = null;
+    let startMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(startLoc).addTo(map);
+
+    map.on('load', () => {
+        map.resize();
+        stations.forEach(s => {
+            const el = document.createElement('div');
+            el.className = 'dot-marker';
+            
+            new mapboxgl.Marker(el).setLngLat(s.coords).addTo(map);
+            el.addEventListener('click', () => {
+                endLoc = s.coords;
+                getRoute(s.coords, s.name, s.info);
+            });
+        });
+    });
+
+    document.getElementById('current-loc-btn').addEventListener('click', () => {
+        navigator.geolocation.getCurrentPosition(p => {
+            startLoc = [p.coords.longitude, p.coords.latitude];
+            startMarker.setLngLat(startLoc);
+            map.flyTo({ center: startLoc, zoom: 12 });
+            if (endLoc) getRoute(endLoc, document.getElementById('dest-name').innerText, document.getElementById('dest-info').innerText);
+        });
+    });
+
+    function customSearch(query) {
+        const matches = [];
+        stations.forEach(s => {
+            if (s.name.toLowerCase().includes(query.toLowerCase())) {
+                matches.push({
+                    center: s.coords,
+                    geometry: { type: 'Point', coordinates: s.coords },
+                    place_name: '🚒 ' + s.name,
+                    properties: { title: s.name, info: s.info },
+                    type: 'Feature'
+                });
+            }
+        });
+        return matches;
+    }
+
+    const startGeocoder = new MapboxGeocoder({
+        accessToken: myToken,
+        mapboxgl: mapboxgl,
+        localGeocoder: customSearch,
+        placeholder: 'Search start...',
+        countries: 'fi',
+        limit: 10
+    });
+    document.getElementById('start-geocoder').appendChild(startGeocoder.onAdd(map));
+
+    const destGeocoder = new MapboxGeocoder({
+        accessToken: myToken,
+        mapboxgl: mapboxgl,
+        localGeocoder: customSearch,
+        placeholder: 'Search destination...',
+        countries: 'fi',
+        limit: 10
+    });
+    document.getElementById('dest-geocoder').appendChild(destGeocoder.onAdd(map));
+
+    startGeocoder.on('result', e => {
+        startLoc = e.result.center;
+        startMarker.setLngLat(startLoc);
+        if (endLoc) getRoute(endLoc, document.getElementById('dest-name').innerText, document.getElementById('dest-info').innerText);
+    });
+
+    destGeocoder.on('result', e => {
+        const info = (e.result.properties && e.result.properties.info) ? e.result.properties.info : e.result.place_name;
+        endLoc = e.result.center;
+        getRoute(e.result.center, e.result.text || e.result.place_name, info);
+    });
+
+    async function getRoute(end, name, info) {
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startLoc[0]},${startLoc[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&language=en&access_token=${myToken}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.routes || data.routes.length === 0) return;
+        const route = data.routes[0];
+
+        document.getElementById('output-panel').style.display = 'flex';
+        document.getElementById('dest-name').innerText = name;
+        document.getElementById('dest-info').innerText = info;
+
+        const totalDist = route.distance;
+        document.getElementById('route-dist').innerText = totalDist < 1000 ? Math.round(totalDist) + " m" : (totalDist / 1000).toFixed(1) + " km";
+
+        document.getElementById('route-time').innerText = Math.floor(route.duration / 60) + " min";
+
+        let stepsHTML = '';
+        route.legs[0].steps.forEach(s => {
+            const stepDist = s.distance;
+            const formattedStepDist = stepDist < 1000 ? Math.round(stepDist) + "m" : (stepDist / 1000).toFixed(1) + "km";
+            stepsHTML += `<div class="step">${s.maneuver.instruction} (${formattedStepDist})</div>`;
+        });
+        document.getElementById('instructions').innerHTML = stepsHTML;
+
+        const sourceData = { type: 'Feature', geometry: route.geometry };
+        if (map.getSource('route')) {
+            map.getSource('route').setData(sourceData);
+        } else {
+            map.addLayer({
+                id: 'route', type: 'line', source: { type: 'geojson', data: sourceData },
+                paint: { 'line-color': '#2563eb', 'line-width': 5, 'line-opacity': 0.75 }
+            });
+        }
+        const bounds = new mapboxgl.LngLatBounds();
+        route.geometry.coordinates.forEach(c => bounds.extend(c));
+        map.fitBounds(bounds, { padding: 50 });
+    }
+</script>
+</body>
+</html>
