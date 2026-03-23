@@ -2,73 +2,81 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Imatra Rescue - Classic Markers</title>
+    <title>Imatra Rescue - Mobile Optimized</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+
     <style>
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #222; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* PANEELIN PERUSTYYLI (Tietokone) */
         .info-panel {
             position: absolute; top: 15px; left: 15px; z-index: 10;
-            background-color: white; padding: 20px; border-radius: 12px;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.3); width: 310px;
+            background-color: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.3); width: 320px;
             max-height: 90vh; display: flex; flex-direction: column;
             font-family: 'Segoe UI', Tahoma, sans-serif;
+            transition: all 0.3s ease;
         }
-        .search-group { margin-bottom: 10px; }
-        .search-label { font-size: 0.75em; font-weight: bold; color: #666; margin-bottom: 4px; display: block; }
-        .station-card { border-left: 4px solid #e11d48; padding-left: 12px; margin-top: 15px; }
-        #instructions { margin-top: 15px; overflow-y: auto; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 10px; }
-        .step { margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
-        #current-loc-btn {
-            background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;
-            padding: 8px; cursor: pointer; font-size: 0.75em; margin-bottom: 15px;
-            width: 100%; font-weight: bold;
-        }
-        #current-loc-btn:hover { background-color: #e0e0e0; }
 
-        /* UUSI ISOMPI PUNAINEN PALLO */
-        .dot-marker {
-            width: 20px;
-            height: 20px;
-            background-color: #e11d48;
-            border: 3px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(0,0,0,0.4);
-            transition: transform 0.2s;
+        /* MOBIILI-OPTIMOINTI (Puhelin) */
+        @media (max-width: 600px) {
+            .info-panel {
+                top: 10px; left: 10px; right: 10px; /* Paneeli keskelle ylös */
+                width: auto; /* Vie lähes koko leveyden */
+                max-height: 45vh; /* Vie max puolet ruudun korkeudesta */
+                padding: 10px;
+                font-size: 13px;
+            }
+            .search-label { font-size: 10px !important; }
+            h2 { font-size: 16px !important; }
         }
-        .dot-marker:hover {
-            transform: scale(1.4);
-            background-color: #ff0033;
+
+        .search-group { margin-bottom: 8px; }
+        .search-label { font-size: 0.75em; font-weight: bold; color: #666; margin-bottom: 2px; display: block; }
+        .station-card { border-left: 4px solid #e11d48; padding-left: 10px; margin-top: 10px; }
+        #instructions { margin-top: 10px; overflow-y: auto; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 8px; }
+        .step { margin-bottom: 6px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+        
+        #current-loc-btn {
+            background-color: #2563eb; color: white; border: none; border-radius: 6px;
+            padding: 10px; cursor: pointer; font-size: 0.85em; margin-bottom: 10px;
+            font-weight: bold; width: 100%;
         }
     </style>
 </head>
 <body>
 
 <div class="info-panel">
-    <div style="font-weight: bold; font-size: 1.2em; color: #e11d48; margin-bottom: 15px;">Rescue Services Imatra</div>
-    <button id="current-loc-btn">📍 Use Current Location</button>
+    <h2 style="margin: 0 0 10px 0; color: #e11d48; font-size: 1.1em;">Rescue Services Imatra</h2>
+    
+    <button id="current-loc-btn">📍 USE MY CURRENT LOCATION</button>
+
     <div class="search-group">
         <span class="search-label">START POINT</span>
         <div id="start-geocoder"></div>
     </div>
+
     <div class="search-group">
         <span class="search-label">DESTINATION</span>
         <div id="dest-geocoder"></div>
     </div>
-    <div id="output-panel" style="display:none;">
+
+    <div id="output-panel" style="display:none; overflow-y: auto;">
         <div class="station-card">
             <div id="dest-name" style="font-weight:bold;"></div>
             <div id="dest-info" style="font-size:0.8em;"></div>
         </div>
-        <div style="margin-top:10px; font-size:0.9em;">
-            Distance: <span id="route-dist" style="color:#2563eb; font-weight:bold;">-</span><br>
-            Time: <span id="route-time" style="font-weight:bold;">-</span>
+        <div style="margin-top:8px; font-size:0.9em; font-weight: bold;">
+            Dist: <span id="route-dist" style="color:#2563eb;">-</span> | 
+            Time: <span id="route-time">-</span>
         </div>
         <div id="instructions"></div>
     </div>
@@ -115,8 +123,9 @@
         map.resize();
         stations.forEach(s => {
             const el = document.createElement('div');
-            el.className = 'dot-marker';
-            
+            el.style.width = '15px'; el.style.height = '15px';
+            el.style.backgroundColor = '#e11d48'; el.style.borderRadius = '50%';
+            el.style.border = '2px solid white'; el.style.cursor = 'pointer';
             new mapboxgl.Marker(el).setLngLat(s.coords).addTo(map);
             el.addEventListener('click', () => {
                 endLoc = s.coords;
@@ -151,22 +160,14 @@
     }
 
     const startGeocoder = new MapboxGeocoder({
-        accessToken: myToken,
-        mapboxgl: mapboxgl,
-        localGeocoder: customSearch,
-        placeholder: 'Search start...',
-        countries: 'fi',
-        limit: 10
+        accessToken: myToken, mapboxgl: mapboxgl, localGeocoder: customSearch,
+        placeholder: 'Start point...', countries: 'fi', limit: 8
     });
     document.getElementById('start-geocoder').appendChild(startGeocoder.onAdd(map));
 
     const destGeocoder = new MapboxGeocoder({
-        accessToken: myToken,
-        mapboxgl: mapboxgl,
-        localGeocoder: customSearch,
-        placeholder: 'Search destination...',
-        countries: 'fi',
-        limit: 10
+        accessToken: myToken, mapboxgl: mapboxgl, localGeocoder: customSearch,
+        placeholder: 'Destination...', countries: 'fi', limit: 8
     });
     document.getElementById('dest-geocoder').appendChild(destGeocoder.onAdd(map));
 
@@ -189,20 +190,15 @@
         if (!data.routes || data.routes.length === 0) return;
         const route = data.routes[0];
 
-        document.getElementById('output-panel').style.display = 'flex';
+        document.getElementById('output-panel').style.display = 'block';
         document.getElementById('dest-name').innerText = name;
         document.getElementById('dest-info').innerText = info;
-
-        const totalDist = route.distance;
-        document.getElementById('route-dist').innerText = totalDist < 1000 ? Math.round(totalDist) + " m" : (totalDist / 1000).toFixed(1) + " km";
-
+        document.getElementById('route-dist').innerText = (route.distance / 1000).toFixed(1) + " km";
         document.getElementById('route-time').innerText = Math.floor(route.duration / 60) + " min";
 
         let stepsHTML = '';
         route.legs[0].steps.forEach(s => {
-            const stepDist = s.distance;
-            const formattedStepDist = stepDist < 1000 ? Math.round(stepDist) + "m" : (stepDist / 1000).toFixed(1) + "km";
-            stepsHTML += `<div class="step">${s.maneuver.instruction} (${formattedStepDist})</div>`;
+            stepsHTML += `<div class="step">${s.maneuver.instruction} (${Math.round(s.distance)}m)</div>`;
         });
         document.getElementById('instructions').innerHTML = stepsHTML;
 
@@ -215,10 +211,12 @@
                 paint: { 'line-color': '#2563eb', 'line-width': 5, 'line-opacity': 0.75 }
             });
         }
+        
         const bounds = new mapboxgl.LngLatBounds();
         route.geometry.coordinates.forEach(c => bounds.extend(c));
-        map.fitBounds(bounds, { padding: 50 });
+        map.fitBounds(bounds, { padding: {top: 250, bottom: 20, left: 20, right: 20} });
     }
 </script>
+
 </body>
 </html>
