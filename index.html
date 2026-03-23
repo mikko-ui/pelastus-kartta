@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Imatra Rescue - Fixed Layout</title>
+    <title>Imatra Rescue - Larger Markers</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -32,13 +32,11 @@
             }
         }
 
-        /* TÄMÄ KORJAA HAKUKENTTIEN PÄÄLLEKKÄISYYDEN */
         .search-group { 
             margin-bottom: 15px; 
             position: relative; 
         }
         
-        /* Ensimmäinen hakukenttä on tasolla 100, toinen tasolla 90 */
         .search-group:first-of-type { z-index: 100; }
         .search-group:nth-of-type(2) { z-index: 90; }
 
@@ -140,7 +138,10 @@
     map.on('load', () => {
         stations.forEach(s => {
             const el = document.createElement('div');
-            el.style.width = '15px'; el.style.height = '15px';
+            // KORJATTU: Koko 1.5x (15px * 1.5 = 22.5px)
+            el.style.width = '22.5px'; 
+            el.style.height = '22.5px';
+            
             el.style.backgroundColor = '#e11d48'; el.style.borderRadius = '50%';
             el.style.border = '2px solid white'; el.style.cursor = 'pointer';
             new mapboxgl.Marker(el).setLngLat(s.coords).addTo(map);
