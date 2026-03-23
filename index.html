@@ -12,38 +12,41 @@
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #222; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* PANEELIN PERUSTYYLI (Tietokone) */
+        /* PANEL STYLE */
         .info-panel {
             position: absolute; top: 15px; left: 15px; z-index: 10;
             background-color: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 12px;
             box-shadow: 0 4px 25px rgba(0,0,0,0.3); width: 320px;
             max-height: 90vh; display: flex; flex-direction: column;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
             transition: all 0.3s ease;
         }
 
-        /* MOBIILI-OPTIMOINTI (Puhelin) */
+        /* MOBILE OPTIMIZATION */
         @media (max-width: 600px) {
             .info-panel {
-                top: 10px; left: 10px; right: 10px; /* Paneeli keskelle ylös */
-                width: auto; /* Vie lähes koko leveyden */
-                max-height: 45vh; /* Vie max puolet ruudun korkeudesta */
+                top: 10px; left: 10px; right: 10px;
+                width: auto;
+                max-height: 50vh;
                 padding: 10px;
-                font-size: 13px;
             }
-            .search-label { font-size: 10px !important; }
             h2 { font-size: 16px !important; }
         }
 
         .search-group { margin-bottom: 8px; }
-        .search-label { font-size: 0.75em; font-weight: bold; color: #666; margin-bottom: 2px; display: block; }
+        .search-label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; display: block; text-transform: uppercase; }
         .station-card { border-left: 4px solid #e11d48; padding-left: 10px; margin-top: 10px; }
+        
         #instructions { margin-top: 10px; overflow-y: auto; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 8px; }
-        .step { margin-bottom: 6px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+        
+        .step { 
+            display: flex; justify-content: space-between; 
+            margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; 
+        }
+        .step-dist { font-weight: bold; color: #2563eb; margin-left: 8px; white-space: nowrap; }
         
         #current-loc-btn {
             background-color: #2563eb; color: white; border: none; border-radius: 6px;
@@ -72,9 +75,9 @@
     <div id="output-panel" style="display:none; overflow-y: auto;">
         <div class="station-card">
             <div id="dest-name" style="font-weight:bold;"></div>
-            <div id="dest-info" style="font-size:0.8em;"></div>
+            <div id="dest-info" style="font-size:0.8em; color: #444;"></div>
         </div>
-        <div style="margin-top:8px; font-size:0.9em; font-weight: bold;">
+        <div style="margin-top:8px; font-size:0.9em; font-weight: bold; background: #f4f4f4; padding: 5px; border-radius: 4px;">
             Dist: <span id="route-dist" style="color:#2563eb;">-</span> | 
             Time: <span id="route-time">-</span>
         </div>
@@ -88,29 +91,30 @@
     const myToken = 'pk.eyJ1IjoicHVzZW5pdXNtIiwiYSI6ImNtbGF4dnJkdTBmaGkzZ3I0MnF4cHdramMifQ.Qu_chBm1vHHidv0tZZ77mA';
     mapboxgl.accessToken = myToken;
 
+    // Asematiedot suomeksi kuten pyydetty
     const stations = [
-        { name: "Imatran paloasema", coords: [28.802606, 61.212504], info: "Units: EK202, EK206" },
-        { name: "Tainionkosken VPK", coords: [28.745036, 61.187443], info: "Units: EK222, EK227" },
-        { name: "Joutsenon paloasema", coords: [28.489787, 61.119090], info: "Units: EK411, EK413, EK417" },
-        { name: "Imatran VPK", coords: [28.793877, 61.170751], info: "Units: EK211, EK213, EK217" },
-        { name: "Ruokolahden VPK", coords: [28.850206, 61.280868], info: "Units: EK311, EK315" },
-        { name: "Lappeenrannan paloasema", coords: [28.237523, 61.060792], info: "Units: EK101, EK103, EK106" },
-        { name: "Simpeleen VPK", coords: [29.360733, 61.434642], info: "Units: EK251, EK253, EK257" },
-        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: "Units: EK352, EK353" },
-        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: "Units: EK302, EK306" },
-        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: "Units: EK131, EK133" },
-        { name: "Rutolan VPK", coords: [28.043561, 61.041917], info: "Units: EK191, EK193" },
-        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: "Units: EK161, EK163" },
-        { name: "Lemin VPK", coords: [27.807265, 61.059921], info: "Units: EK342, EK343" },
-        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: "Units: EK261, EK263" },
-        { name: "Savitaipaleen VPK", coords: [27.683248, 61.198784], info: "Units: EK311, EK313" },
-        { name: "Luumäen VPK", coords: [27.554962, 60.921391], info: "Units: EK321, EK323" },
-        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: "Units: EK121, EK123, EK127" }
+        { name: "Imatran paloasema", coords: [28.802606, 61.212504], info: "Yksiköt: EK202, EK206" },
+        { name: "Tainionkosken VPK", coords: [28.745036, 61.187443], info: "Yksiköt: EK222, EK227" },
+        { name: "Joutsenon paloasema", coords: [28.489787, 61.119090], info: "Yksiköt: EK411, EK413, EK417" },
+        { name: "Imatran VPK", coords: [28.793877, 61.170751], info: "Yksiköt: EK211, EK213, EK217" },
+        { name: "Ruokolahden VPK", coords: [28.850206, 61.280868], info: "Yksiköt: EK311, EK315" },
+        { name: "Lappeenrannan paloasema", coords: [28.237523, 61.060792], info: "Yksiköt: EK101, EK103, EK106" },
+        { name: "Simpeleen VPK", coords: [29.360733, 61.434642], info: "Yksiköt: EK251, EK253, EK257" },
+        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: "Yksiköt: EK352, EK353" },
+        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: "Yksiköt: EK302, EK306" },
+        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: "Yksiköt: EK131, EK133" },
+        { name: "Rutolan VPK", coords: [28.043561, 61.041917], info: "Yksiköt: EK191, EK193" },
+        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: "Yksiköt: EK161, EK163" },
+        { name: "Lemin VPK", coords: [27.807265, 61.059921], info: "Yksiköt: EK342, EK343" },
+        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: "Yksiköt: EK261, EK263" },
+        { name: "Savitaipaleen VPK", coords: [27.683248, 61.198784], info: "Yksiköt: EK311, EK313" },
+        { name: "Luumäen VPK", coords: [27.554962, 60.921391], info: "Yksiköt: EK321, EK323" },
+        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: "Yksiköt: EK121, EK123, EK127" }
     ];
 
     const map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: 'mapbox://styles/mapbox/streets-v12',
         center: [28.85, 61.23],
         zoom: 10
     });
@@ -120,7 +124,6 @@
     let startMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(startLoc).addTo(map);
 
     map.on('load', () => {
-        map.resize();
         stations.forEach(s => {
             const el = document.createElement('div');
             el.style.width = '15px'; el.style.height = '15px';
@@ -161,13 +164,13 @@
 
     const startGeocoder = new MapboxGeocoder({
         accessToken: myToken, mapboxgl: mapboxgl, localGeocoder: customSearch,
-        placeholder: 'Start point...', countries: 'fi', limit: 8
+        placeholder: 'Search starting point...', countries: 'fi'
     });
     document.getElementById('start-geocoder').appendChild(startGeocoder.onAdd(map));
 
     const destGeocoder = new MapboxGeocoder({
         accessToken: myToken, mapboxgl: mapboxgl, localGeocoder: customSearch,
-        placeholder: 'Destination...', countries: 'fi', limit: 8
+        placeholder: 'Search destination...', countries: 'fi'
     });
     document.getElementById('dest-geocoder').appendChild(destGeocoder.onAdd(map));
 
@@ -184,6 +187,7 @@
     });
 
     async function getRoute(end, name, info) {
+        // Ohjeet pyydetään englanniksi ('en')
         const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startLoc[0]},${startLoc[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&language=en&access_token=${myToken}`;
         const res = await fetch(url);
         const data = await res.json();
@@ -198,7 +202,16 @@
 
         let stepsHTML = '';
         route.legs[0].steps.forEach(s => {
-            stepsHTML += `<div class="step">${s.maneuver.instruction} (${Math.round(s.distance)}m)</div>`;
+            // MUUTETAAN METRIT KILOMETREIKSI JOS YLI 1000m
+            const distLabel = s.distance >= 1000 
+                ? (s.distance / 1000).toFixed(1) + " km" 
+                : Math.round(s.distance) + " m";
+
+            stepsHTML += `
+                <div class="step">
+                    <span>${s.maneuver.instruction}</span>
+                    <span class="step-dist">${distLabel}</span>
+                </div>`;
         });
         document.getElementById('instructions').innerHTML = stepsHTML;
 
