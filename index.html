@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Imatra Rescue - Larger Markers</title>
+    <title>Imatra Rescue - Red Start, Blue Destination</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -62,7 +62,7 @@
         .step-dist { font-weight: bold; color: #2563eb; margin-left: 8px; white-space: nowrap; }
         
         #current-loc-btn {
-            background-color: #2563eb; color: white; border: none; border-radius: 6px;
+            background-color: #e11d48; color: white; border: none; border-radius: 6px;
             padding: 10px; cursor: pointer; font-size: 0.85em; margin-bottom: 15px;
             font-weight: bold; width: 100%;
         }
@@ -76,12 +76,12 @@
     <button id="current-loc-btn">📍 USE MY CURRENT LOCATION</button>
 
     <div class="search-group">
-        <span class="search-label">START POINT</span>
+        <span class="search-label">START POINT (RED)</span>
         <div id="start-geocoder"></div>
     </div>
 
     <div class="search-group">
-        <span class="search-label">DESTINATION</span>
+        <span class="search-label">DESTINATION (BLUE)</span>
         <div id="dest-geocoder"></div>
     </div>
 
@@ -123,7 +123,6 @@
         { name: "Luumäen VPK", coords: [27.554962, 60.921391], info: "Units: EK321, EK323" },
         { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: "Units: EK121, EK123, EK127" },
         { name: "Rautjärven VPK", coords: [29.090613, 61.302278], info: "Units: EK241, EK243, EK2415" }
-        
     ];
 
     const map = new mapboxgl.Map({
@@ -135,24 +134,10 @@
 
     let startLoc = [28.85, 61.23];
     let endLoc = null;
-    let startMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(startLoc).addTo(map);
-
-    map.on('load', () => {
-        stations.forEach(s => {
-            const el = document.createElement('div');
-            // KORJATTU: Koko 1.5x (15px * 1.5 = 22.5px)
-            el.style.width = '22.5px'; 
-            el.style.height = '22.5px';
-            
-            el.style.backgroundColor = '#e11d48'; el.style.borderRadius = '50%';
-            el.style.border = '2px solid white'; el.style.cursor = 'pointer';
-            new mapboxgl.Marker(el).setLngLat(s.coords).addTo(map);
-            el.addEventListener('click', () => {
-                endLoc = s.coords;
-                getRoute(s.coords, s.name, s.info);
-            });
-        });
-    });
+    
+    // MUUTETTU: Alkupisteen markkeri on nyt punainen (#e11d48)
+    let startMarker = new mapboxgl.Marker({ color: '#e11d48' }).setLngLat(startLoc).addTo(map);
+    let currentDestMarker = null;
 
     document.getElementById('current-loc-btn').addEventListener('click', () => {
         navigator.geolocation.getCurrentPosition(p => {
@@ -199,8 +184,19 @@
 
     destGeocoder.on('result', e => {
         const info = (e.result.properties && e.result.properties.info) ? e.result.properties.info : e.result.place_name;
+        const name = e.result.text || e.result.place_name;
         endLoc = e.result.center;
-        getRoute(e.result.center, e.result.text || e.result.place_name, info);
+
+        if (currentDestMarker) {
+            currentDestMarker.remove();
+        }
+
+        // Kohdemarkkeri pysyy sinisenä erottuvuuden vuoksi
+        currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' }) 
+            .setLngLat(endLoc)
+            .addTo(map);
+
+        getRoute(endLoc, name, info);
     });
 
     async function getRoute(end, name, info) {
