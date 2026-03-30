@@ -117,17 +117,17 @@
         { name: "Imatran VPK", coords: [28.793877, 61.170751], info: "South Karelia 21", fleet: {"Units": ["EK211", "EK217", "EK213"]} },
         { name: "Ruokolahden VPK", coords: [28.850206, 61.280868], info: "South Karelia 23", fleet: {"Units": ["EK231", "EK233"]} },
         { name: "Lappeenrannan paloasema", coords: [28.237523, 61.060792], info: "Main Station" , fleet: {"Units": ["EK102", "EK103", "EK106 Aerial"]} },
-        { name: "Simpeleen VPk", coords: [29.360733, 61.434642], info: ["EK251", "EK257"] },
-        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: ["EK352", "EK357"] },
-        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: ["EK302", "EK306"] },
-        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: ["EK131", "EK133", "EK137"] },
-        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: ["EK161", "EK163", "EK167"] },
-        { name: "Lemin VPk", coords: [27.807265, 61.059921], info: ["EK342", "EK347"] },
-        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: ["EK261", "EK263", "EK267"] },
-        { name: "Savitaipaleen VPk", coords: [27.683248, 61.198784], info: ["EK311", "EK313", "EK317"] },
-        { name: "Luumäken vPK", coords: [27.554962, 60.921391], info: ["EK321", "EK323", "EK327"] },
-        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: ["EK121", "EK123", "EK127"] },
-        { name: "Rautjärven VPK", coords: [29.090613, 61.302278], info: ["EK241", "EK243", "EK247"] }
+        { name: "Simpeleen VPK", coords: [29.360733, 61.434642], info: "EK251, EK257" },
+        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: "EK352, EK357" },
+        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: "EK302, EK306" },
+        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: "EK131, EK133, EK137" },
+        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: "EK161, EK163, EK167" },
+        { name: "Lemin VPK", coords: [27.807265, 61.059921], info: "EK342, EK347" },
+        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: "EK261, EK263, EK267" },
+        { name: "Savitaipaleen VPK", coords: [27.683248, 61.198784], info: "EK311, EK313, EK317" },
+        { name: "Luumäen VPK", coords: [27.554962, 60.921391], info: "EK321, EK323, EK327" },
+        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: "EK121, EK123, EK127" },
+        { name: "Rautjärven VPK", coords: [29.090613, 61.302278], info: "EK241, EK243, EK247" }
     ];
 
     const map = new mapboxgl.Map({
@@ -137,8 +137,16 @@
 
     let startLoc = [28.85, 61.23];
     let endLoc = null;
+    let currentStationData = null;
+    
     let startMarker = new mapboxgl.Marker({ color: '#e11d48' }).setLngLat(startLoc).addTo(map);
     let currentDestMarker = null;
+
+    function updateRouteIfPossible() {
+        if (startLoc && endLoc && currentStationData) {
+            getRoute(endLoc, currentStationData.name, currentStationData.info, currentStationData.fleet);
+        }
+    }
 
     function getDistance(c1, c2) {
         return Math.sqrt(Math.pow(c1[0]-c2[0], 2) + Math.pow(c1[1]-c2[1], 2));
@@ -154,6 +162,7 @@
         if (closest) {
             startLoc = clicked; startMarker.setLngLat(startLoc);
             endLoc = closest.coords;
+            currentStationData = closest;
             if (currentDestMarker) currentDestMarker.remove();
             currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(endLoc).addTo(map);
             getRoute(endLoc, closest.name, closest.info, closest.fleet);
@@ -174,7 +183,7 @@
         const fleetContainer = document.getElementById('fleet-container');
         const fleetContent = document.getElementById('fleet-content');
         
-        if (fleet) {
+        if (fleet && Object.keys(fleet).length > 0) {
             fleetContainer.style.display = 'block';
             let html = '';
             for (const category in fleet) {
@@ -218,14 +227,22 @@
 
     const startGeocoder = new MapboxGeocoder({ accessToken: myToken, mapboxgl: mapboxgl, placeholder: 'Search start...', countries: 'fi', localGeocoder: customSearch });
     document.getElementById('start-geocoder').appendChild(startGeocoder.onAdd(map));
+    
     const destGeocoder = new MapboxGeocoder({ accessToken: myToken, mapboxgl: mapboxgl, placeholder: 'Search station...', countries: 'fi', localGeocoder: customSearch });
     document.getElementById('dest-geocoder').appendChild(destGeocoder.onAdd(map));
+
+    startGeocoder.on('result', e => {
+        startLoc = e.result.center;
+        startMarker.setLngLat(startLoc);
+        updateRouteIfPossible();
+    });
 
     destGeocoder.on('result', e => {
         const name = e.result.text || e.result.place_name;
         const info = e.result.properties?.info || "";
         const fleet = e.result.properties?.fleet || null;
         endLoc = e.result.center;
+        currentStationData = { name, info, fleet };
         if (currentDestMarker) currentDestMarker.remove();
         currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(endLoc).addTo(map);
         getRoute(endLoc, name, info, fleet);
@@ -236,6 +253,7 @@
             startLoc = [p.coords.longitude, p.coords.latitude];
             startMarker.setLngLat(startLoc);
             map.flyTo({ center: startLoc, zoom: 12 });
+            updateRouteIfPossible();
         });
     });
 </script>
