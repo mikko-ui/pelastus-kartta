@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Imatra Rescue - Red Start, Blue Destination</title>
+    <title>Imatra Rescue - Lähin Paloasema</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -66,6 +66,9 @@
             padding: 10px; cursor: pointer; font-size: 0.85em; margin-bottom: 15px;
             font-weight: bold; width: 100%;
         }
+        .click-hint {
+            font-size: 0.75em; color: #666; text-align: center; margin-top: 5px; font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +87,8 @@
         <span class="search-label">DESTINATION (BLUE)</span>
         <div id="dest-geocoder"></div>
     </div>
+
+    <div class="click-hint">Tip: Click anywhere on map to find nearest station</div>
 
     <div id="output-panel" style="display:none; overflow-y: auto;">
         <div class="station-card">
@@ -135,9 +140,44 @@
     let startLoc = [28.85, 61.23];
     let endLoc = null;
     
-    // MUUTETTU: Alkupisteen markkeri on nyt punainen (#e11d48)
     let startMarker = new mapboxgl.Marker({ color: '#e11d48' }).setLngLat(startLoc).addTo(map);
     let currentDestMarker = null;
+
+    // Apu-funktio etäisyyden laskemiseen (Pythagoras)
+    function getDistance(c1, c2) {
+        return Math.sqrt(Math.pow(c1[0]-c2[0], 2) + Math.pow(c1[1]-c2[1], 2));
+    }
+
+    // --- UUSI TOIMINTO: Klikkaus etsii lähimmän paloaseman ---
+    map.on('click', (e) => {
+        const clicked = [e.lngLat.lng, e.lngLat.lat];
+        
+        let closest = null;
+        let minDist = Infinity;
+
+        stations.forEach(s => {
+            const d = getDistance(clicked, s.coords);
+            if (d < minDist) {
+                minDist = d;
+                closest = s;
+            }
+        });
+
+        if (closest) {
+            // Päivitetään alkupiste klikattuun kohtaan
+            startLoc = clicked;
+            startMarker.setLngLat(startLoc);
+
+            // Päivitetään kohde lähimpään asemaan
+            endLoc = closest.coords;
+            if (currentDestMarker) currentDestMarker.remove();
+            currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' })
+                .setLngLat(endLoc)
+                .addTo(map);
+
+            getRoute(endLoc, closest.name, closest.info);
+        }
+    });
 
     document.getElementById('current-loc-btn').addEventListener('click', () => {
         navigator.geolocation.getCurrentPosition(p => {
@@ -186,16 +226,8 @@
         const info = (e.result.properties && e.result.properties.info) ? e.result.properties.info : e.result.place_name;
         const name = e.result.text || e.result.place_name;
         endLoc = e.result.center;
-
-        if (currentDestMarker) {
-            currentDestMarker.remove();
-        }
-
-        // Kohdemarkkeri pysyy sinisenä erottuvuuden vuoksi
-        currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' }) 
-            .setLngLat(endLoc)
-            .addTo(map);
-
+        if (currentDestMarker) currentDestMarker.remove();
+        currentDestMarker = new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(endLoc).addTo(map);
         getRoute(endLoc, name, info);
     });
 
@@ -217,12 +249,7 @@
             const distLabel = s.distance >= 1000 
                 ? (s.distance / 1000).toFixed(1) + " km" 
                 : Math.round(s.distance) + " m";
-
-            stepsHTML += `
-                <div class="step">
-                    <span>${s.maneuver.instruction}</span>
-                    <span class="step-dist">${distLabel}</span>
-                </div>`;
+            stepsHTML += `<div class="step"><span>${s.maneuver.instruction}</span><span class="step-dist">${distLabel}</span></div>`;
         });
         document.getElementById('instructions').innerHTML = stepsHTML;
 
