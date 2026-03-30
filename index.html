@@ -94,17 +94,17 @@
 
     const stations = [
         { 
-            name: "Tainionkoski VFB", 
+            name: "Tainionkosken VPK", 
             coords: [28.745036, 61.187443], 
             info: "South Karelia 22",
             fleet: {
-                "Vehicles": ["EK221 Fire Engine", "EK227 Personnel Carrier"],
-                "Water Rescue": ["EK228 Boat", "Surface Rescue Gear"],
+                "Vehicles": ["EK222 Fire Engine", "EK227 Personnel Carrier"],
+                "Water Rescue": ["Surface Rescue Gear"],
                 "Equipment": ["Portable Pump Fox 3", "Chainsaws", "5kW Generator", "Submersible Pumps"]
             }
         },
         { 
-            name: "Rutola VFB", 
+            name: "Rutolan VPK", 
             coords: [28.043561, 61.041917], 
             info: "South Karelia 19",
             fleet: {
@@ -112,22 +112,22 @@
                 "Equipment": ["Portable Pump", "Hazardous Material Kit", "Rescue Tools", "Smoke Ejector"]
             }
         },
-        { name: "Imatra Fire Station", coords: [28.802606, 61.212504], info: "Main Station", fleet: {"Units": ["EK201", "EK203", "EK206 Aerial", "EK205 Ambulance"]} },
-        { name: "Joutseno Fire Station", coords: [28.489787, 61.119090], info: "South Karelia 41", fleet: {"Units": ["EK411", "EK413"]} },
-        { name: "Imatra VFB", coords: [28.793877, 61.170751], info: "South Karelia 21", fleet: {"Units": ["EK211", "EK217"]} },
-        { name: "Ruokolahti VFB", coords: [28.850206, 61.280868], info: "South Karelia 23", fleet: {"Units": ["EK231"]} },
-        { name: "Lappeenranta Fire Station", coords: [28.237523, 61.060792], info: "Main Station" },
-        { name: "Simpele VFB", coords: [29.360733, 61.434642], info: "EK251" },
-        { name: "Taipalsaari Fire Station", coords: [28.076100, 61.153183], info: "EK352" },
-        { name: "Lavola Fire Station", coords: [28.111246, 61.040891], info: "EK302" },
-        { name: "Tirilä VFB", coords: [28.237887, 61.057333], info: "EK131" },
-        { name: "Nuijamaa VFB", coords: [28.529505, 60.959594], info: "EK161" },
-        { name: "Lemi VFB", coords: [27.807265, 61.059921], info: "EK342" },
-        { name: "Parikkala VFB", coords: [29.503653, 61.549309], info: "EK261" },
-        { name: "Savitaipale VFB", coords: [27.683248, 61.198784], info: "EK311" },
-        { name: "Luumäki VFB", coords: [27.554962, 60.921391], info: "EK321" },
-        { name: "Lappeenranta VFB", coords: [28.202396, 61.051788], info: "EK121" },
-        { name: "Rautjärvi VFB", coords: [29.090613, 61.302278], info: "EK241" }
+        { name: "Imatran paloasema", coords: [28.802606, 61.212504], info: "Main Station", fleet: {"Units": ["EK202", "EK203", "EK206 Aerial"]} },
+        { name: "Joutsenon paloasema", coords: [28.489787, 61.119090], info: "South Karelia 41", fleet: {"Units": ["EK411", "EK413"]} },
+        { name: "Imatran VPK", coords: [28.793877, 61.170751], info: "South Karelia 21", fleet: {"Units": ["EK211", "EK217", "EK213"]} },
+        { name: "Ruokolahden VPK", coords: [28.850206, 61.280868], info: "South Karelia 23", fleet: {"Units": ["EK231", "EK233"]} },
+        { name: "Lappeenrannan paloasema", coords: [28.237523, 61.060792], info: "Main Station" , fleet: {"Units": ["EK102", "EK103", "EK106 Aerial"]} },
+        { name: "Simpeleen VPk", coords: [29.360733, 61.434642], info: ["EK251", "EK257"] },
+        { name: "Taipalsaaren paloasema", coords: [28.076100, 61.153183], info: ["EK352", "EK357"] },
+        { name: "Lavolan paloasema", coords: [28.111246, 61.040891], info: ["EK302", "EK306"] },
+        { name: "Tirilän VPK", coords: [28.237887, 61.057333], info: ["EK131", "EK133", "EK137"] },
+        { name: "Nuijamaan VPK", coords: [28.529505, 60.959594], info: ["EK161", "EK163", "EK167"] },
+        { name: "Lemin VPk", coords: [27.807265, 61.059921], info: ["EK342", "EK347"] },
+        { name: "Parikkalan VPK", coords: [29.503653, 61.549309], info: ["EK261", "EK263", "EK267"] },
+        { name: "Savitaipaleen VPk", coords: [27.683248, 61.198784], info: ["EK311", "EK313", "EK317"] },
+        { name: "Luumäken vPK", coords: [27.554962, 60.921391], info: ["EK321", "EK323", "EK327"] },
+        { name: "Lappeenrannan VPK", coords: [28.202396, 61.051788], info: ["EK121", "EK123", "EK127"] },
+        { name: "Rautjärven VPK", coords: [29.090613, 61.302278], info: ["EK241", "EK243", "EK247"] }
     ];
 
     const map = new mapboxgl.Map({
